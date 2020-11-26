@@ -1,0 +1,42 @@
+---
+# Ansible version required: 2.9.6
+# ---------------------------------------------------------------------------------------------------------
+# Execution:
+# DEV:  ansible-playbook ./playbooks/logrotate.yml -e "target=dev" --limit "k8s_dev" --list-hosts
+# PROD:  ansible-playbook ./playbooks/logrotate.yml -e "target=prod" --limit "k8s_prod" --list-hosts
+# ---------------------------------------------------------------------------------------------------------
+
+- name: "Installing and configuring logrotate"
+  hosts: k8s
+  gather_facts: yes
+  become: yes
+  vars_files:
+    - "vars/{{ target }}.yml"
+
+  vars:
+    logrotate_scripts:
+      - name: allpodlogs
+        path: /var/lib/docker/containers/*/*.log
+        options:
+          - rotate 5
+          - daily
+          - copytruncate
+          - missingok
+          - notifempty
+          - compress
+          - maxsize 100M
+          - dateext
+          - dateformat -%Y%m%d-%s
+          - create 0644 root root
+
+  roles:
+    - logrotate
+
+  environment: "{{ proxy_env }}"
+
+  tasks:
+    - name: "Verify logrotate config check passes"
+      shell: logrotate -d "{{ logrotate_conf_dir }}{{ item.name }}"
+      with_items: "{{ logrotate_scripts }}"
+      register: logrotate_tests
+      failed_when: "'error' in logrotate_tests.stderr"

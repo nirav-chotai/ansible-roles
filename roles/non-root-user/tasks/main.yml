@@ -1,0 +1,14 @@
+---
+- name: "create the 'bigdata' user"
+  user: name=bigdata append=yes state=present createhome=yes shell=/bin/bash
+
+- name: "allow 'bigdata' to have passwordless sudo"
+  lineinfile:
+    dest: /etc/sudoers
+    line: 'bigdata ALL=(ALL) NOPASSWD: ALL'
+    validate: 'visudo -cf %s'
+
+- name: "set up authorized keys for the bigdata user"
+  authorized_key: user=bigdata key="{{item}}"
+  with_file:
+    - ~/.ssh/id_rsa.pub

@@ -1,0 +1,15 @@
+---
+# Ansible version required: 2.9.6
+# -------------------------------------------------------------------------------------------------------------------------
+# Execution:
+# DEV: ansible-playbook ./playbooks/non-root-user.yml -u $USER --ask-pass --ask-become-pass --limit "k8s_dev" --list-hosts
+# PROD: ansible-playbook ./playbooks/non-root-user.yml -u $USER --ask-pass --ask-become-pass --limit "k8s_prod" --list-hosts
+# -------------------------------------------------------------------------------------------------------------------------
+
+- name: "Creating a Non-Root User on All Remote Servers"
+  hosts: k8s
+  gather_facts: no
+  become: yes
+
+  roles:
+    - non-root-user
