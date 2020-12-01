@@ -1,0 +1,42 @@
+---
+- name: "Download Istio"
+  unarchive:
+    src: "https://github.com/istio/istio/releases/download/{{ istio_version }}/istio-{{ istio_version }}-linux.tar.gz"
+    dest: /tmp/
+    remote_src: yes
+
+- name: "Add the istioctl client to the path"
+  copy:
+    src: "/tmp/istio-{{ istio_version }}/bin/istioctl"
+    dest: /usr/local/bin/istioctl
+    mode: "a+x"
+    remote_src: yes
+
+- name: "Installing Istio"
+  shell: istioctl manifest apply --set profile={{ istio_profile }}
+  register: istio_apply
+  until: istio_apply.rc == 0
+  retries: 5
+  delay: 5
+
+- name: "Generate the istio manifest"
+  shell: istioctl manifest generate --set profile={{ istio_profile }} > $HOME/istio-generated-manifest.yaml
+
+- name: "Verify the istio deployment"
+  shell: istioctl verify-install -f $HOME/istio-generated-manifest.yaml
+  register: istio_verify
+  until: '"Istio is installed successfully" in istio_verify.stderr'
+  retries: 60
+  delay: 30
+
+- name: "Transferring Custom Istio Configuration"
+  copy:
+    src: files/custom-istio.yaml
+    dest: /tmp/custom-istio.yaml
+
+- name: "Applying Custom ingressGateways Configuration"
+  shell: istioctl manifest apply -f /tmp/custom-istio.yaml
+  register: custom_istio_apply
+  until: custom_istio_apply.rc == 0
+  retries: 5
+  delay: 5

@@ -1,3 +1,7 @@
 ---
 ansible_user: bigdata
 env: dev
+
+# Role: Installing Istio
+istio_version: "1.5.1"
+istio_profile: "default"

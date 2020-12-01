@@ -1,0 +1,19 @@
+---
+# Ansible version required: 2.9.6
+# -------------------------------------------------------------------------------------------------------------------------
+# Execution:
+# DEV: ansible-playbook ./playbooks/istio-setup.yml -e "target=dev" --limit "k8s_dev_masters_primary" --list-hosts
+# PROD: ansible-playbook ./playbooks/istio-setup.yml -e "target=prod" --limit "k8s_prod_masters_primary" --list-hosts
+# -------------------------------------------------------------------------------------------------------------------------
+
+- name: "Installing and configuring Istio"
+  hosts: k8s
+  gather_facts: yes
+  become: yes
+  vars_files:
+    - "vars/{{ target }}.yml"
+
+  roles:
+    - install-istio
+
+  environment: "{{ proxy_env }}"
