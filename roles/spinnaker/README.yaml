@@ -1,0 +1,659 @@
+########################################################################################################
+# Spinnaker
+
+# DEV: /Users/ubuntu/.hal/default/profiles
+# PROD: /home/ubuntu/.hal/default/profiles
+
+########################################################################################################
+# Ansible Installation - Production Ready
+########################################################################################################
+
+- Run Ansible Playbook
+- Expose Services to NodePort
+
+########################################################################################################
+
+# References
+- Install: https://www.spinnaker.io/setup/install/
+- Helm Chart: https://github.com/helm/charts/tree/master/stable/spinnaker
+- Hal Commands: https://www.spinnaker.io/reference/halyard/commands/
+- Kubernetes V2: https://www.spinnaker.io/setup/install/providers/kubernetes-v2/
+- FAQs: https://www.spinnaker.io/setup/quickstart/faq/#halyard-faq
+- Custom: https://www.spinnaker.io/reference/halyard/custom/
+- GCS Storage: https://www.spinnaker.io/setup/install/storage/gcs/
+- GCS Artifact: https://www.spinnaker.io/setup/artifacts/gcs/
+- Deploy Helm: https://www.spinnaker.io/guides/user/kubernetes-v2/deploy-helm/
+- LDAP: https://www.spinnaker.io/setup/security/authentication/ldap/
+- Authorization: https://www.spinnaker.io/setup/security/authorization/
+- Pipeline Permissions: https://www.spinnaker.io/setup/security/authorization/pipeline-permissions/
+- Administrator: https://www.spinnaker.io/setup/security/admin/
+- Sizing: https://www.spinnaker.io/reference/halyard/component-sizing/
+- Versioning: https://www.spinnaker.io/reference/providers/kubernetes-v2/#strategy
+- Jenkins: 
+    https://www.spinnaker.io/setup/ci/jenkins/
+    https://www.spinnaker.io/guides/user/pipeline/triggers/jenkins/
+    https://www.spinnaker.io/guides/user/pipeline/expressions/#property-files
+
+# Deploying Helm Charts with Armory Spinnaker
+https://www.youtube.com/watch?v=u7QF2X4WzE8&feature=youtu.be
+
+# Other References
+- https://www.digitalocean.com/community/tutorials/how-to-set-up-a-cd-pipeline-with-spinnaker-on-digitalocean-kubernetes
+- https://aws.amazon.com/blogs/opensource/deployment-pipeline-spinnaker-kubernetes/
+
+# Versioning of ConfigMap and Secrets
+https://www.spinnaker.io/reference/artifacts-with-artifactsrewrite/in-kubernetes-v2/#versioned-kubernetes-objects
+https://www.spinnaker.io/guides/user/kubernetes-v2/best-practices/#version-your-configmaps-and-secrets
+https://www.spinnaker.io/reference/providers/kubernetes-v2/#strategy
+https://www.spinnaker.io/community/faqs/#how-do-i-store-my-spinnaker-application-in-version-control
+https://www.spinnaker.io/guides/tutorials/codelabs/kubernetes-v2-source-to-prod/
+
+########################################################################################################
+
+# Features
+Cluster Management
+Deployment Management
+
+# Concepts, Spinnaker = Kubernetes
+# Kubernetes: Cluster -> Deployment -> Replica Set -> Pod
+# Spinnaker: Application -> Cluster -> Server Group -> Instance
+Instance = Pod 
+Server Group = Replica Set 
+Cluster = Deployment
+Application = Cluster
+Load Balancer = Service
+Security Group = Network Policy
+Account = Kubernetes (credentials for docker registries, credentials to access Kubernetes api-server)
+Kubernetes Provider = V1 ("Legacy") and V2 ("Manifest-based") (default V2)
+    V1 = EOL very soon, June-2020, require both credentials
+    V2 = Default, also doesn't need docker registry credentials
+Providers = multiple accounts per provider (dev, staging, prod accounts)
+Accounts keep the credentials for your provider
+Rollout Strategies = Dark Rollouts, Highlander Rollouts, Red/Black Rollouts
+
+########################################################################################################
+
+# Known Issues
+
+# hal version is unknown: https://github.com/spinnaker/spinnaker/issues/5052
+hal -v 
+
+# Pipeline Templates V2 Expected (Bitbucket) Artifacts not found
+# Same with Helm and other S3 or GCS artifacts
+https://github.com/spinnaker/spinnaker/issues/4127
+
+2020-05-15 12:02:40.050  WARN 1 --- [utionAction-395] c.n.s.c.d.r.a.v.c.DockerRegistryClient   : 
+    Error encountered during catalog of null
+retrofit.RetrofitError: connect timed out
+
+https://github.com/spinnaker/spinnaker/issues/1891
+This was caused by not having the Cloud Resource Manager API enabled. 
+This is a new requirement for using the catalog endpoint in Google Container Registry.
+
+# Halyard/Spinnaker does not see any tags in repositories
+https://github.com/spinnaker/spinnaker/issues/2407
+https://stackoverflow.com/questions/44783736/how-to-list-images-and-tags-from-the-gcr-io-docker-registry-using-the-http-api/45097445#45097445
+
+# clouddriver
+# https://github.com/spinnaker/spinnaker/issues/3366
+# https://community.spinnaker.io/t/wait-for-manifest-to-stabilize-in-deploy-manifest-takes-a-long-time/1163/3
+2020-06-04 10:50:44.994  WARN 1 --- [utionAction-253] c.n.s.c.cache.LoggingInstrumentation     : kubernetes:DEV-K8S/KubernetesMetricCachingAgent[1/1] completed with one or more failures
+com.netflix.spinnaker.clouddriver.kubernetes.v2.op.job.KubectlJobExecutor$KubectlException: Could not read metrics: Error from server (ServiceUnavailable): the server is currently unable to handle the request (get pods.metrics.k8s.io)
+
+# Spinnaker versioning
+# ConfigMap
+dev-bootstrap-v000
+dev-bootstrap-v001
+# Secrets
+license-v000
+license-v001
+# Solution
+https://www.spinnaker.io/reference/providers/kubernetes-v2/#strategy
+
+# Pipeline expression syntax is based on Spring Expression Language (SpEL)
+
+Expression Evaluation: Evaluate SpEL expressions in overrides at bake time
+    Explicitly evaluate SpEL expressions in overrides just prior to manifest baking. Can be paired with the "Skip SpEL evaluation" option in the Deploy Manifest stage when baking a third-party manifest artifact with expressions not meant for Spinnaker to evaluate as SpEL.
+Expression Evaluation: Skip SpEL expression evaluation
+    Skip SpEL expression evaluation of the manifest artifact in this stage. Can be paired with the "Evaluate SpEL expressions in overrides at bake time" option in the Bake Manifest stage when baking a third-party manifest artifact with expressions not meant for Spinnaker to evaluate as SpEL.
+
+# All accounts are not visible in Cluster -> Infrastructure -> Server Groups (RBAC issue only)
+https://github.com/spinnaker/spinnaker/issues/5057
+https://github.com/spinnaker/spinnaker/issues/5098
+https://github.com/spinnaker/spinnaker/issues/5611
+https://docs.armory.io/admin-guides/troubleshooting/#i-cant-see-recently-deployed-server-groups-in-the-infrastructure-view-with-the-v2-kubernetes-provider
+
+########################################################################################################
+# Helm Chart Installation (not recommended)
+########################################################################################################
+
+# create a namespace
+kubectl create ns spinnaker
+
+# create a secret to pull image from gcr
+kubectl create secret docker-registry gcr-json-key \
+ --docker-server=asia.gcr.io \
+ --docker-username=_json_key \
+ --docker-password="$(cat /home/ubuntu/spinnaker/key.json)" \
+ --docker-email=nchotai@abc.com -n spinnaker
+
+kubectl get secrets -n spinnaker
+
+# create a secret to enable storage backend
+kubectl create secret generic spinnaker-gcs-secret --from-file=key.json -n spinnaker
+kubectl get secrets -n spinnaker
+
+# create a secret with kubeconfig
+kubectl create secret generic dev-kubeconfig --from-file=config -n spinnaker
+kubectl create secret generic prod-kubeconfig --from-file=config -n spinnaker
+kubectl get secrets -n spinnaker
+
+# deplpy the helm chart
+helm upgrade --install --namespace spinnaker --values ../staging/spinnaker.yaml --timeout 600s spinnaker spinnaker
+helm upgrade --install --namespace spinnaker --values ../production/spinnaker.yaml --timeout 600s spinnaker spinnaker
+
+########################################################################################################
+# Manual Installation - https://www.spinnaker.io/setup/install/ 
+########################################################################################################
+
+# 1. Install Halyard
+curl -O https://raw.githubusercontent.com/spinnaker/halyard/master/install/macos/InstallHalyard.sh
+sudo -E bash InstallHalyard.sh
+# Halconfig will be stored at /Users/ubuntu/.hal/config
+# Uninstall script is located at /Users/ubuntu/.hal/uninstall.sh
+# logs: /var/log/spinnaker/halyard/halyard.log
+hal -v
+. ~/.bashrc
+# To update halyard
+# sudo -E update-halyard
+
+# 2. Choose Cloud Providers - Kubernetes Provider 
+# Adding Proxy - https://github.com/spinnaker/spinnaker/issues/3038
+cat /opt/halyard/bin/halyard | grep DEFAULT_JVM_OPTS
+sudo vim /opt/halyard/bin/halyard
+DEFAULT_JVM_OPTS='"-Dhttp.proxyHost=proxy.com" "-Dhttp.proxyPort=9501" "-Dhttps.proxyHost=proxy.com" "-Dhttps.proxyPort=9501" "-Djava.security.egd=file:/dev/./urandom" "-Dspring.config.additional-location=/opt/spinnaker/config/"'
+hal shutdown
+hal -v 
+# Configure Kubernetes roles (RBAC) 
+# https://www.spinnaker.io/setup/install/providers/kubernetes-v2/
+kubectl apply -f role.yaml
+
+# Adding an account
+hal config provider kubernetes enable
+
+CONTEXT=$(kubectl config current-context)
+
+hal config provider kubernetes account add my-k8s-account \
+    --context $CONTEXT
+
+# 3. Choose your Environment
+hal config deploy edit --type distributed --account-name my-k8s-account
+# hal config deploy edit --liveness-probe-enabled true --liveness-probe-initial-delay-seconds 600
+
+# 4. Choose a storage service
+# Google Cloud Storage
+SERVICE_ACCOUNT_DEST=/home/ubuntu/spinnaker/key.json
+PROJECT="gcp-project"
+BUCKET="r-dev-spinnaker-storage"
+hal config storage gcs edit --project $PROJECT \
+    --bucket $BUCKET \
+    --json-path $SERVICE_ACCOUNT_DEST
+
+hal config storage edit --type gcs
+
+SERVICE_ACCOUNT_DEST=/home/ubuntu/spinnaker/key.json
+PROJECT="gcp-project"
+BUCKET="r-prod-spinnaker-storage"
+hal config storage gcs edit --project $PROJECT \
+    --bucket $BUCKET \
+    --json-path $SERVICE_ACCOUNT_DEST
+
+# 5. Custom Configuration
+# https://www.spinnaker.io/reference/halyard/custom/
+# https://www.spinnaker.io/setup/quickstart/faq/
+# Service settings: .hal/default/service-settings
+# Halconfig will be stored at /Users/ubuntu/.hal/config
+# Files /Users/ubuntu/.hal/default/service-settings
+# vim /Users/ubuntu/.hal/default/service-settings/deck.yml
+# vim /Users/ubuntu/.hal/default/service-settings/gate.yml
+# vim /Users/ubuntu/.hal/default/service-settings/rosco.yml
+# vim /Users/ubuntu/.hal/default/service-settings/igor.yml
+# vim /Users/ubuntu/.hal/default/service-settings/echo.yml
+# vim /Users/ubuntu/.hal/default/service-settings/orca.yml
+# vim /Users/ubuntu/.hal/default/service-settings/front50.yml
+
+env:
+    JAVA_OPTS: "-Dhttp.proxyHost=proxy.com -Dhttp.proxyPort=9501 -Dhttps.proxyHost=proxy.com
+                -Dhttps.proxyPort=9501 -Dhttp.nonProxyHosts='localhost|127.*|[::1]|*.spinnaker'"
+
+# vim ~/.hal/default/service-settings/clouddriver.yml
+env:
+    JAVA_OPTS: "-Dhttp.proxyHost=proxy.com -Dhttp.proxyPort=9501 -Dhttps.proxyHost=proxy.com
+                -Dhttps.proxyPort=9501 -Dhttp.nonProxyHosts='localhost|127.*|[::1]|*.spinnaker'"
+    HTTP_PROXY: "http://proxy.com:9501"
+    HTTPS_PROXY: "http://proxy.com:9501"
+    NO_PROXY: "localhost,127.0.0.1,*.spinnaker" 
+
+# $DEPLOYMENT, typically default
+# Custom Profiles: ~/.hal/$DEPLOYMENT/profiles/
+# Halconfig will be stored at /Users/ubuntu/.hal/config
+# Files /Users/ubuntu/.hal/default/profiles
+# Verification: ~/.hal/$DEPLOYMENT/history/service-profiles.yml
+# Timeout of 20s: https://github.com/spinnaker/spinnaker/issues/5518
+# Front50 health: https://github.com/spinnaker/spinnaker/issues/1018
+# vim /Users/ubuntu/.hal/default/profiles/front50-local.yml
+# vim /Users/ubuntu/.hal/default/profiles/orca-local.yml
+# vim /Users/ubuntu/.hal/default/profiles/rosco-local.yml
+# vim /Users/ubuntu/.hal/default/profiles/gate-local.yml
+# vim /Users/ubuntu/.hal/default/profiles/igor-local.yml
+front50-local.yml:
+okHttpClient:
+    connectTimeoutMs: 900000
+    readTimeoutMs: 900000
+hystrix:
+    command:
+    default.execution.isolation.thread.timeoutInMilliseconds: 900000
+management:
+    health:
+        redis:
+        enabled: false
+orca-local.yml:
+okHttpClient:
+    connectTimeoutMs: 900000
+    readTimeoutMs: 900000
+rosco-local.yml:
+okHttpClient:
+    connectTimeoutMs: 900000
+    readTimeoutMs: 900000
+gate-local.yml:
+okHttpClient:
+    connectTimeoutMs: 900000
+    readTimeoutMs: 900000
+
+# 6. Deploy Spinnaker
+# BOM: https://storage.googleapis.com/halconfig/bom/1.20.2.yml
+hal version list
+hal config version edit --version 1.20.2
+hal deploy apply
+
+# 7. Expose services
+kubectl edit svc spin-deck -n spinnaker
+kubectl edit svc spin-gate -n spinnaker
+# DEV
+hal config security ui edit --override-base-url "http://10.10.2.3:31017"
+hal config security api edit --override-base-url "http://10.10.2.4:30861"
+# PROD
+hal config security ui edit --override-base-url "http://10.10.1.1:32307"
+hal config security api edit --override-base-url "http://10.10.1.2:30057"
+hal deploy apply  
+
+# After getting domain
+hal config security ui edit --override-base-url https://spinnaker.internal.com
+hal config security api edit --override-base-url https://api-spinnaker-gate.internal.com
+hal deploy apply 
+
+# 8. Configure Artifacts
+# Configuring GCS Artifact Credentials
+# hal config features edit --artifacts true
+
+ARTIFACT_ACCOUNT_NAME=my-gcs-artifact-account
+SERVICE_ACCOUNT_DEST=/home/ubuntu/spinnaker/key.json
+hal config artifact gcs account add $ARTIFACT_ACCOUNT_NAME \
+    --json-path $SERVICE_ACCOUNT_DEST
+
+hal config artifact gcs enable
+hal config artifact gcs account list
+hal deploy apply  
+
+ARTIFACT_ACCOUNT_NAME=spinnaker-gcs-artifact-account
+SERVICE_ACCOUNT_DEST=/home/ubuntu/spinnaker/key.json
+hal config artifact gcs account edit $ARTIFACT_ACCOUNT_NAME \
+    --json-path $SERVICE_ACCOUNT_DEST
+hal deploy apply  
+
+# 9. Jenkins
+# Trigger Issue: https://github.com/spinnaker/spinnaker/issues/892
+# HTTPS Jenkins Issue: https://github.com/spinnaker/spinnaker/issues/3083
+# PR: https://github.com/spinnaker/igor/pull/363
+# Fix: https://github.com/spinnaker/igor/pull/596/commits/44db94eee0775d29419fbf47f364fbabd5edb7ea
+# Token: 1164c5df53dec2f63ce9f11a45389cb9df
+
+igor-local.yml:
+    jenkins:
+      masters:
+      - address: "https://mydomain.com/jenkins/"
+        name: my-jenkins-master
+        username: nirav
+        password: 1164c5df53dec2f63ce9f11a45389cb9df
+        keyStore: /home/ubuntu/spinnaker/jenkins.jks
+        keyStorePassword: changeit
+
+openssl pkcs12 \
+   -export \
+   -clcerts \
+   -in server.cert \
+   -inkey server.key \
+   -out jenkins.p12 \
+   -name jenkins \
+   -passin pass:changeit \
+   -password pass:changeit
+
+keytool -importkeystore \
+   -srckeystore jenkins.p12 \
+   -srcstoretype pkcs12 \
+   -srcalias jenkins \
+   -destkeystore jenkins.jks \
+   -destalias jenkins \
+   -deststoretype pkcs12 \
+   -deststorepass changeit \
+   -destkeypass changeit \
+   -srcstorepass changeit
+
+keytool \
+    -list \
+    -keystore jenkins.jks \
+    -storepass changeit  
+
+hal config ci jenkins enable
+hal config ci jenkins master list
+
+hal config ci jenkins master edit prod-jenkins \
+    --address http://10.10.2.5:31317/jenkins/ \
+    --username nirav \
+    --password 110aa45d4fcdd87ad09e19d750d0eabebf \
+    --csrf true 
+
+# hal config ci jenkins master edit my-jenkins-master --address http://internal.local/jenkins/
+# hal config ci jenkins master edit my-jenkins-master --address http://10.10.2.5:31317/jenkins/
+# hal config ci jenkins master edit my-jenkins-master --csrf true
+# hal config ci jenkins master edit my-jenkins-master --no-validate true
+hal deploy apply
+
+# 10. Back Up Your Config
+# ~/.hal/.backup/required-files
+hal backup create
+# + Successfully created a backup at location:
+# /home/ubuntu/halyard-2020-05-21_01-47-45-596Z.tar
+# Restore: hal backup restore --backup-path <backup-name>.tar
+
+# 11. Jenkins Property to Spinnaker Pipeline
+# Viewing hal config: hal config -q
+kubectl create ns sample-microservice
+kubectl create secret docker-registry gcr-json-key \
+ --docker-server=asia.gcr.io \
+ --docker-username=_json_key \
+ --docker-password="$(cat /tmp/prod-gcp.json)" \
+ --docker-email=nchotai@abc.com -n sample-microservice
+# kubectl patch serviceaccount default -p '{"imagePullSecrets": [{"name": "gcr-json-key"}]}' -n sample-microservice
+gs://r-helm-repo/sample-microservice-0.1.0.tgz
+gs://r-helm-repo/sample-microservice-${trigger["properties"]["version"]}.tgz
+
+# 12. Customize images
+FROM gcr.io/spinnaker-marketplace/igor:1.10.0-20200428134356
+COPY jenkins.jks /opt/
+COPY jenkins.p12 /opt/
+
+cat /tmp/dev-gcp.json | docker login -u _json_key --password-stdin https://asia.gcr.io
+docker build -t asia.gcr.io/gcp/spinnaker/igor:1.10.0 .
+docker push asia.gcr.io/gcp/spinnaker/igor:1.10.0
+
+kubectl create secret docker-registry gcr-json-key \
+ --docker-server=asia.gcr.io \
+ --docker-username=_json_key \
+ --docker-password="$(cat /tmp/dev-gcp.json)" \
+ --docker-email=nchotai@abc.com -n spinnaker
+
+# 13. LDAP Authentication
+
+# [Deck] Redirect to login screen not working (LDAP Auth)
+# https://github.com/spinnaker/spinnaker/issues/1810
+# ~/.hal/default/profiles/settings-local.js
+authEnabled = true
+window.spinnakerSettings.feature.managedServiceAccounts = true;
+
+# LDAP authentication configuration
+# https://github.com/spinnaker/spinnaker/issues/2570
+# ~/.hal/default/profiles/gate-local.yml
+ldap:
+  enabled: true
+  url: ldap://my.ldap.tld:389/DC=org,DC=com
+  userDnPattern: sAMAccountName={0}
+  userSearchBase: OU=users
+  userSearchFilter: (&(ObjectClass=user)(sAMAccountName={0}))
+  managerDn: CN=sys,OU=users,DC=org,DC=com
+  managerPassword: pewpew
+  groupSearchBase: CN=group,OU=my,OU=groups
+  groupSearchFilter: (&(uniqueMember={0})(ObjectClass=groupOfUniqueNames))
+  groupRoleAttribute: cn
+
+hal config security authn ldap edit --user-search-base="" --user-search-filter="" --url=""
+
+hal config security authn ldap enable
+hal deploy apply
+
+# 14. Authorization (RBAC)
+# # https://kb.armory.io/troubleshooting/file-based-authorization/
+# Administrator functionality
+# ~/.hal/default/profiles/fiat-local.yml
+
+fiat:
+  admin:
+    roles:
+    - devops
+
+# Pipeline Permissions
+# orca-local.yml
+tasks:
+  useManagedServiceAccounts: true
+
+# Authorization: roles.yaml
+users:
+- username: nirav.chotai
+    roles:
+    - devops
+- username: n.chotai
+    roles:
+    - viewer
+
+
+hal config provider kubernetes account list
+hal config provider kubernetes account edit DEV-K8S --read-permissions viewer --write-permissions devops
+hal config provider kubernetes account edit PROD-K8S --read-permissions viewer --write-permissions devops
+hal deploy apply
+
+hal config security authz file edit --file-path roles.yaml
+hal config security authz edit --type FILE
+hal config security authz enable
+hal deploy apply
+
+# Verification
+# https://docs.armory.io/overview/fiat-permissions-overview/
+
+curl 10.96.182.85:7003/authorize/nirav.chotai
+curl -s 10.96.182.85:7003/authorize/nirav.chotai | jq .admin
+curl -s 10.96.182.85:7003/authorize/nirav.chotai | jq .roles
+
+# 15. Component Sizing 
+# /home/ubuntu/.hal/config
+
+customSizing:
+    # This applies sizings to only the echo container and not to any sidecar 
+    # containers running with echo.
+  clouddriver:
+    limits:
+      cpu: 4
+      memory: 8Gi
+    requests:
+      cpu: 4
+      memory: 8Gi
+  deck:
+    limits:
+      cpu: 500m
+      memory: 2Gi
+    requests:
+      cpu: 500m
+      memory: 2Gi
+  echo:
+    limits:
+      cpu: 500m
+      memory: 2Gi
+    requests:
+      cpu: 500m
+      memory: 2Gi
+  fiat:
+    limits:
+      cpu: 500m
+      memory: 2Gi
+    requests:
+      cpu: 500m
+      memory: 2Gi
+  front50:
+    limits:
+      cpu: 500m
+      memory: 2Gi
+    requests:
+      cpu: 500m
+      memory: 2Gi
+  gate:
+    limits:
+      cpu: 500m
+      memory: 2Gi
+    requests:
+      cpu: 500m
+      memory: 2Gi
+  igor:
+    limits:
+      cpu: 2
+      memory: 4Gi
+    requests:
+      cpu: 2
+      memory: 4Gi
+  orca:
+    limits:
+      cpu: 2
+      memory: 4Gi
+    requests:
+      cpu: 2
+      memory: 4Gi
+  rosco:
+    limits:
+      cpu: 500m
+      memory: 2Gi
+    requests:
+      cpu: 500m
+      memory: 2Gi
+  redis:
+    limits:
+      cpu: 2
+      memory: 4Gi
+    requests:
+      cpu: 2
+      memory: 4Gi
+
+
+# 16. Slack
+# https://docs.armory.io/spinnaker-install-admin-guides/slack-notifications/
+# App: https://api.slack.com/apps/A014TR8T3A4
+# Bot: spinnakernotify
+
+xoxb-12345678-1176815051201-0m4ZKVAvqYTrteydlH67VTfS
+
+export TOKEN_FROM_SLACK="xoxb-12345678-1176815051201-0m4ZKVAvqYTrteydlH67VTfS"
+export SLACK_BOT=spinnakernotify
+
+hal config notification slack enable
+
+echo $TOKEN_FROM_SLACK | hal config notification slack edit --bot-name $SLACK_BOT --token
+
+hal deploy apply
+
+# 17. Updating Kubernetes liveManifestCalls mode
+# https://www.spinnaker.io/community/releases/versions/1-12-0-changelog#kubernetes-livemanifestcalls-mode
+# https://community.spinnaker.io/t/wait-for-manifest-to-stabilize-in-deploy-manifest-takes-a-long-time/1163/3
+# https://github.com/spinnaker/spinnaker/issues/3366
+
+hal config provider kubernetes account list
+hal config provider kubernetes account edit DEV-K8S --live-manifest-calls true
+hal config provider kubernetes account edit PROD-K8S --live-manifest-calls true
+hal deploy apply
+
+# 18. Spin CLI
+curl -LO https://storage.googleapis.com/spinnaker-artifacts/spin/$(curl -s https://storage.googleapis.com/spinnaker-artifacts/spin/latest)/linux/amd64/spin
+chmod +x spin
+sudo mv spin /usr/local/bin/spin
+
+# 19. Using Pipeline Templates
+
+hal config features edit --managed-pipeline-templates-v2-ui true
+hal deploy apply
+
+hal config features edit --pipeline-templates true
+hal deploy apply
+
+# spin pipeline get --name <pipelineName> --application <appName> | tee new_template.txt
+spin pipeline get --name "Sample Deployment" \
+  --application "sample-microservice" \
+  --gate-endpoint "https://api-spinnaker-gate.internal.com" \
+  --config "~/.spin/config" | tee new_template.txt
+
+
+########################################################################################################
+
+# Receiving artifacts from GCS
+# https://www.spinnaker.io/guides/user/pipeline/triggers/gcs/
+# Configure Google Pub/Sub for GCS
+# https://www.spinnaker.io/setup/triggers/google/
+
+# Adding roles/pubsub.subscriber
+MESSAGE_FORMAT=GCS
+
+TOPIC=my-spinnaker-dev-topic
+SUBSCRIPTION=my-spinnaker-dev-topic-subscription
+
+gsutil notification create -t $TOPIC -f json gs://r-helm-repo
+Created Cloud Pub/Sub topic projects/my-gcp-project/topics/spinnaker-dev-topic
+Created notification config projects/_/buckets/r-helm-repo/notificationConfigs/2
+
+gcloud beta pubsub subscriptions create $SUBSCRIPTION --topic $TOPIC
+Created subscription [projects/my-gcp-project/subscriptions/my-spinnaker-dev-topic-subscription].
+
+hal config pubsub google enable
+hal config pubsub google subscription add my-google-pubsub \
+    --subscription-name my-spinnaker-dev-topic-subscription \
+    --json-path /opt/gcs/key.json \
+    --project my-gcp-project \
+    --message-format GCS
+
+# Bitbucket
+# https://www.spinnaker.io/setup/artifacts/bitbucket/
+hal config artifact bitbucket enable
+hal config artifact bitbucket account add my-bitbucket-account \
+    --username-password-file /tmp/pwd.txt
+
+########################################################################################################      
+
+# Logging
+hal deploy collect-logs
+# ~/.hal/default/service-logs
+
+# Cleanup
+# hal --daemon-endpoint http://spinnaker-spinnaker-halyard:8064 deploy clean
+hal deploy clean
+sudo ~/.hal/uninstall.sh
+
+########################################################################################################      
+
+# Record a session Deploying Helm Charts with Armory Spinnaker
+https://www.youtube.com/watch?v=u7QF2X4WzE8&feature=youtu.be
+
+# Next items to try
+Vault with Spinnaker: https://docs.armory.io/spinnaker-install-admin-guides/secrets-vault/
+Automated Rollbacks: https://www.spinnaker.io/guides/user/kubernetes-v2/automated-rollbacks/
+
+# Spinnaker is kind of block box for Helm (manages interally, hard to debug any issue)
+# Spinnaker uses lots of resources, clouddriver alone is consuming 36 GB of memory with 4 CPUs
+# Once deployed through Spinnaker, hard to switch to any other CI/CD tool
+# Spinnaker automated rollbacks are not in use (as we disable versioning), Jenkins already has this one.
+# Configuring Spinnaker Pipeline is manual and prone to errors (while Jenkins is much easier and can be automated as well)
+# Giving RBAC access to Spinnaker is complex 
+
