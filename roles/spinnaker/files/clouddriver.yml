@@ -1,0 +1,5 @@
+env:
+  JAVA_OPTS: "-Dhttp.proxyHost={{ http_proxy }} -Dhttp.proxyPort={{ http_port }} -Dhttps.proxyHost={{ https_proxy }} -Dhttps.proxyPort={{ https_port }} -Dhttp.nonProxyHosts='localhost|127.*|[::1]|*.spinnaker'"
+  HTTP_PROXY: "{{ proxy_env.http_proxy }}"
+  HTTPS_PROXY: "{{ proxy_env.https_proxy }}"
+  NO_PROXY: "localhost,127.0.0.1,*.spinnaker"

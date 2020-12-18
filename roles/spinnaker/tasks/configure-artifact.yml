@@ -1,0 +1,6 @@
+---
+- name: Add an artifact account for GCS
+  shell: hal config artifact gcs account {{ provider_command }} spinnaker-gcs-artifact-account --json-path {{ spinnaker_gcs_key }}
+
+- name: Enable GCS artifact support
+  shell: hal config artifact gcs enable

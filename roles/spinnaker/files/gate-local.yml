@@ -1,0 +1,3 @@
+okHttpClient:
+  connectTimeoutMs: 900000
+  readTimeoutMs: 900000

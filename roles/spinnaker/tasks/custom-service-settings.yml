@@ -1,0 +1,45 @@
+---
+# https://www.spinnaker.io/reference/halyard/custom/
+# https://www.spinnaker.io/setup/quickstart/faq/
+# Service settings: .hal/default/service-settings/
+# Halconfig will be stored at /home/ubuntu/.hal/config
+# Files /home/ubuntu/.hal/default/service-settings
+- name: Updating service settings for deck
+  copy:
+    src: files/deck.yml
+    dest: /home/{{ ansible_user }}/.hal/default/service-settings/deck.yml
+
+- name: Updating service settings for echo
+  copy:
+    src: files/echo.yml
+    dest: /home/{{ ansible_user }}/.hal/default/service-settings/echo.yml
+
+- name: Updating service settings for front50
+  copy:
+    src: files/front50.yml
+    dest: /home/{{ ansible_user }}/.hal/default/service-settings/front50.yml
+
+- name: Updating service settings for gate
+  copy:
+    src: files/gate.yml
+    dest: /home/{{ ansible_user }}/.hal/default/service-settings/gate.yml
+
+- name: Updating service settings for igor
+  copy:
+    src: files/igor.yml
+    dest: /home/{{ ansible_user }}/.hal/default/service-settings/igor.yml
+
+- name: Updating service settings for orca
+  copy:
+    src: files/orca.yml
+    dest: /home/{{ ansible_user }}/.hal/default/service-settings/orca.yml
+
+- name: Updating service settings for rosco
+  copy:
+    src: files/rosco.yml
+    dest: /home/{{ ansible_user }}/.hal/default/service-settings/rosco.yml
+
+- name: Updating service settings for clouddriver
+  copy:
+    src: files/clouddriver.yml
+    dest: /home/{{ ansible_user }}/.hal/default/service-settings/clouddriver.yml

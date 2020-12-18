@@ -5,3 +5,20 @@ env: dev
 # Role: Installing Istio
 istio_version: "1.5.1"
 istio_profile: "default"
+
+# Role: Installing Spinnaker
+spinnaker_halyard_installation_script_url: "https://raw.githubusercontent.com/spinnaker/halyard/master/install/debian/InstallHalyard.sh"
+spinnaker_version: "1.20.2"
+spinnaker_gcs_key: "/home/ubuntu/spinnaker/key.json"
+gcs_bucket: "r-dev-spinnaker-storage"
+jenkins_master_name: "dev-jenkins"
+jenkins_base_url: "http://10.10.2.4:30492/jenkins/"
+jenkins_username: "nirav"
+jenkins_user_password: "1159f997658a217f9e36ec24374d5128af"
+http_proxy: "dev-proxy.co"
+http_port: "9500"
+https_proxy: "dev-proxy.co"
+https_port: "9500"
+provider_command: "edit"
+dev_account_name: "DEV-K8S"
+prod_account_name: "PROD-K8S"

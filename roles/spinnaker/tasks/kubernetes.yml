@@ -1,0 +1,27 @@
+---
+- name: Creating Spinnaker Namespace Definition
+  copy:
+    src: files/spinnaker-sa.yml
+    dest: /tmp/spinnaker-sa.yml
+
+- name: Create a Kubernetes Service Account
+  shell: kubectl apply -f /tmp/spinnaker-sa.yml
+  
+- name: Sending DEV kubeconfig
+  copy:
+    src: files/dev-kubeconfig
+    dest: /tmp/dev-kubeconfig
+
+- name: Sending PROD kubeconfig
+  copy:
+    src: files/prod-kubeconfig
+    dest: /tmp/prod-kubeconfig
+
+- name: Enabling kubernetes provider
+  shell: hal config provider kubernetes enable
+
+- name: Adding DEV Kubernetes Account
+  shell: hal config provider kubernetes account {{ provider_command }} {{ dev_account_name }} --environment dev --kubeconfig-file /tmp/dev-kubeconfig
+
+- name: Adding PROD Kubernetes Account
+  shell: hal config provider kubernetes account {{ provider_command }} {{ prod_account_name }} --environment prod --kubeconfig-file /tmp/prod-kubeconfig

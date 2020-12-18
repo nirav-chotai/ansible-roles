@@ -1,0 +1,10 @@
+okHttpClient:
+  connectTimeoutMs: 900000
+  readTimeoutMs: 900000
+hystrix:
+  command:
+  default.execution.isolation.thread.timeoutInMilliseconds: 900000
+management:
+  health:
+    redis:
+      enabled: false

@@ -1,0 +1,9 @@
+---
+- name: Enabling Jenkins
+  shell: hal config ci jenkins enable
+
+- name: Adding Jenkins master
+  shell: echo {{ jenkins_user_password }} | hal config ci jenkins master add {{ jenkins_master_name }} --address {{ jenkins_base_url }} --username {{ jenkins_username }} --password
+
+- name: Configure Jenkins and Spinnaker for CSRF protection
+  shell: hal config ci jenkins master edit {{ jenkins_master_name }} --csrf true

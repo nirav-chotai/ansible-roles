@@ -1,0 +1,10 @@
+---
+- name: Set Halyard version to be used
+  shell: hal config version edit --version {{ spinnaker_version }}
+
+- name: Deploy Spinnaker
+  shell: hal deploy apply
+  register: spinnaker_verify_one
+
+- name: Store the first verification output
+  action: copy content="{{ spinnaker_verify_one.stdout }}" dest="/tmp/spinnaker_verify_one.stdout"

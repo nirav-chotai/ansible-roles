@@ -1,0 +1,22 @@
+---
+- name: Get Halyard Installation Script
+  get_url:
+     url: "{{ spinnaker_halyard_installation_script_url }}"
+     dest: /tmp/InstallHalyard.sh
+     mode: 0755
+  register:
+
+- name: Install Halyard
+  shell: /tmp/InstallHalyard.sh -y --user {{ ansible_user }}
+
+- name: Replcaing DEFAULT_JVM_OPTS to halyard
+  lineinfile:
+    path: /opt/halyard/bin/halyard
+    regexp: '^DEFAULT_JVM_OPTS='
+    line: "DEFAULT_JVM_OPTS='\"-Dhttp.proxyHost={{ http_proxy }}\" \"-Dhttp.proxyPort={{ http_port }}\" \"-Dhttps.proxyHost={{ https_proxy }}\" \"-Dhttps.proxyPort={{ https_port }}\" \"-Djava.security.egd=file:/dev/./urandom\" \"-Dspring.config.additional-location=/opt/spinnaker/config/\"'"
+
+- name: Shutdown Halyard
+  shell: hal shutdown
+
+- name: Start Halyard
+  shell: hal -v

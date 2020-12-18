@@ -1,0 +1,27 @@
+---
+# Timeout of 20s: https://github.com/spinnaker/spinnaker/issues/5518
+# Front50 health: https://github.com/spinnaker/spinnaker/issues/1018
+# $DEPLOYMENT, typically default
+# Custom Profiles: ~/.hal/$DEPLOYMENT/profiles/
+# Halconfig will be stored at /home/ubuntu/.hal/config
+# Files /home/ubuntu/.hal/default/profiles
+# Verification: ~/.hal/$DEPLOYMENT/history/service-profiles.yml
+- name: Updating profile for front50
+  copy:
+    src: files/front50-local.yml
+    dest: /home/{{ ansible_user }}/.hal/default/profiles/front50-local.yml
+
+- name: Updating profile for gate
+  copy:
+    src: files/gate-local.yml
+    dest: /home/{{ ansible_user }}/.hal/default/profiles/gate-local.yml
+
+- name: Updating profile for orca
+  copy:
+    src: files/orca-local.yml
+    dest: /home/{{ ansible_user }}/.hal/default/profiles/orca-local.yml
+
+- name: Updating profile for rosco
+  copy:
+    src: files/rosco-local.yml
+    dest: /home/{{ ansible_user }}/.hal/default/profiles/rosco-local.yml

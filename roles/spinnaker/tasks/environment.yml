@@ -1,0 +1,6 @@
+---
+- name: Updating DEV Environment
+  shell: hal config deploy edit --type distributed --account-name {{ dev_account_name }}
+
+- name: Updating PROD Environment
+  shell: hal config deploy edit --type distributed --account-name {{ prod_account_name }}

@@ -1,0 +1,43 @@
+---
+# Doc: https://www.spinnaker.io/setup/install/halyard/
+- name: "Installing Halyard"
+  include: install-halyard.yml
+
+# Doc: https://www.spinnaker.io/setup/install/providers/kubernetes-v2/
+- name: "Setting up Kubernetes Provider"
+  include: kubernetes.yml
+
+# Doc: https://www.spinnaker.io/setup/install/environment/
+- name: "Setting up an environment"
+  include: environment.yml
+
+# Doc: https://www.spinnaker.io/setup/install/storage/gcs/
+- name: "Setting up Storage Service"
+  include: storage.yml
+
+# Doc: https://www.spinnaker.io/setup/install/deploy/
+- name: "Deploying Spinnaker"
+  include: deploy-spinnaker.yml
+
+# Doc: https://www.spinnaker.io/setup/quickstart/faq/
+- name: "Updating service settings"
+  include: custom-service-settings.yml
+
+# Doc: https://www.spinnaker.io/reference/halyard/custom/
+- name: "Updating profiles"
+  include: custom-profiles.yml
+
+# Doc: https://www.spinnaker.io/setup/artifacts/gcs/
+- name: "Configuring GCS Artifact Credentials"
+  include: configure-artifact.yml
+
+# Doc: https://www.spinnaker.io/setup/ci/jenkins/
+- name: "Setting up Jenkins as a Continuous Integration (CI) system"
+  include: jenkins.yml
+
+- name: "Re-deploy Spinnaker to apply changes"
+  shell: hal deploy apply
+  register: spinnaker_verify_final
+
+- name: "Store the final verification output"
+  action: copy content="{{ spinnaker_verify_final.stdout }}" dest="/tmp/spinnaker_verify_final.stdout"
